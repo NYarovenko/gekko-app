@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ГЕККО І КО — мої заявки</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F2F2F7;min-height:100vh}
+#app{max-width:480px;margin:0 auto;min-height:100vh}
+
+/* ---- LOGIN SCREEN ---- */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+#login-screen.hidden{display:none}
+.login-logo{font-size:48px;margin-bottom:8px}
+.login-title{font-size:20px;font-weight:700;color:#1C1C1E;margin-bottom:4px;text-align:center}
+.login-sub{font-size:13px;color:#8E8E93;margin-bottom:28px;text-align:center}
+.login-input{width:100%;max-width:320px;padding:14px 16px;border-radius:12px;border:1.5px solid #E0E0E0;font-size:16px;margin-bottom:12px;background:#fff;-webkit-appearance:none}
+.login-input:focus{border-color:#185FA5;outline:none}
+.login-btn{width:100%;max-width:320px;padding:14px;border-radius:12px;background:#185FA5;color:#fff;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;-webkit-tap-highlight-color:transparent}
+.login-btn:active{opacity:0.85}
+.login-error{color:#A32D2D;font-size:13px;margin-top:10px;text-align:center;min-height:18px}
+.remember-row{display:flex;align-items:center;gap:8px;width:100%;max-width:320px;margin-top:2px;margin-bottom:4px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.remember-row input[type="checkbox"]{width:18px;height:18px;accent-color:#185FA5;cursor:pointer}
+.remember-row span{font-size:14px;color:#1C1C1E}
+
+/* ---- MAIN APP ---- */
+#main-screen{display:none}
+#main-screen.visible{display:block}
+#header{background:#fff;border-bottom:0.5px solid #E0E0E0;padding:12px 16px;position:sticky;top:0;z-index:10}
+#header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#header h1{font-size:16px;font-weight:600;color:#1C1C1E}
+#user-badge{font-size:12px;color:#185FA5;background:#E6F1FB;padding:4px 10px;border-radius:20px;font-weight:600;display:flex;align-items:center;gap:6px}
+#logout-btn{font-size:11px;color:#8E8E93;background:none;border:none;cursor:pointer;text-decoration:underline;padding:0}
+#stats{display:flex;gap:6px;flex-wrap:wrap}
+.stat-pill{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+#refresh-btn{font-size:13px;color:#185FA5;border:0.5px solid #AAC8E8;background:#E6F1FB;border-radius:10px;padding:6px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#settings-btn{font-size:15px;border:0.5px solid #E0E0E0;background:#fff;border-radius:10px;padding:6px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+#cards{padding:10px 12px;display:flex;flex-direction:column;gap:8px;padding-bottom:90px}
+.card-wrap{position:relative;overflow:hidden;border-radius:12px}
+.card-delete-bg{position:absolute;right:0;top:0;bottom:0;width:80px;background:#E24B4A;display:flex;align-items:center;justify-content:center;font-size:22px}
+.card{background:#fff;border-radius:12px;border-left:3px solid #ccc;padding:10px 12px;cursor:pointer;border-top:0.5px solid #E0E0E0;border-right:0.5px solid #E0E0E0;border-bottom:0.5px solid #E0E0E0;position:relative;transition:transform 0.15s ease;user-select:none;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.card.red{border-left-color:#E24B4A}.card.amber{border-left-color:#EF9F27}.card.green{border-left-color:#639922}
+.card.dismissing{transition:transform 0.25s ease,opacity 0.25s ease;transform:translateX(-110%)!important;opacity:0}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.card-time{font-size:12px;display:flex;align-items:center;gap:4px}
+.card-time.red{color:#A32D2D}.card-time.amber{color:#854F0B}.card-time.green{color:#3B6D11}
+.card-right{display:flex;align-items:center;gap:6px}
+.card-zayav{font-size:13px;font-weight:600;color:#185FA5}
+.freenet-badge{font-size:10px;padding:2px 6px;border-radius:10px;background:#E6F1FB;color:#185FA5;font-weight:600}
+.card-addr{font-size:13px;color:#1C1C1E;margin:2px 0;font-weight:500}
+.card-prob{font-size:12px;color:#8E8E93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.card-footer{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.card-resp{font-size:11px;color:#AEAEB2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-footer-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.card-prio{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600}
+.prio-4{background:#FEF3C7;color:#854F0B}.prio-5{background:#FEE2E2;color:#A32D2D}
+.card-map-btn{font-size:11px;padding:2px 7px;border-radius:10px;background:#E6F1FB;color:#185FA5;border:none;cursor:pointer;font-weight:600;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+
+#empty{text-align:center;padding:60px 20px;color:#8E8E93}
+#empty .icon{font-size:52px;display:block;margin-bottom:12px}
+#empty p{font-size:14px;font-weight:500}
+#empty .hint{font-size:12px;margin-top:6px;color:#AEAEB2}
+
+#loading{text-align:center;padding:60px 20px;color:#8E8E93;font-size:14px}
+
+/* Modal */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:flex-end;justify-content:center}
+#modal-overlay.open{display:flex}
+#modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:480px;max-height:82vh;overflow-y:auto;padding:16px;padding-bottom:32px}
+.modal-handle{width:36px;height:4px;background:#E0E0E0;border-radius:2px;margin:0 auto 14px}
+.modal-close{float:right;font-size:22px;color:#8E8E93;cursor:pointer;line-height:1}
+.modal-num{font-size:13px;font-weight:600;color:#185FA5;margin-bottom:6px}
+.modal-addr{font-size:17px;font-weight:600;color:#1C1C1E;margin-bottom:14px;line-height:1.3}
+.modal-row{display:flex;gap:8px;margin-bottom:7px;font-size:13px}
+.modal-label{color:#8E8E93;min-width:84px;flex-shrink:0}
+.modal-val{color:#1C1C1E;word-break:break-word}
+.modal-divider{height:0.5px;background:#E0E0E0;margin:12px 0}
+.modal-map-btn{display:block;width:100%;margin-top:16px;padding:13px;border-radius:12px;background:#185FA5;color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent}
+
+/* Settings screen */
+#settings-overlay{display:none;position:fixed;inset:0;background:#F2F2F7;z-index:250;flex-direction:column}
+#settings-overlay.open{display:flex}
+#settings-header{background:#fff;border-bottom:0.5px solid #E0E0E0;display:flex;justify-content:center;flex-shrink:0}
+#settings-header-inner{display:flex;align-items:center;gap:12px;font-size:16px;font-weight:600;color:#1C1C1E;padding:14px 16px;max-width:480px;width:100%;box-sizing:border-box}
+#settings-header button{font-size:20px;background:none;border:none;cursor:pointer;color:#185FA5;padding:0;-webkit-tap-highlight-color:transparent}
+#settings-menu{padding:16px 12px;max-width:480px;margin:0 auto;width:100%}
+.settings-item{display:flex;align-items:center;gap:12px;width:100%;background:#fff;border:none;border-radius:12px;padding:14px 16px;font-size:15px;color:#1C1C1E;cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;text-align:left}
+.settings-item-icon{font-size:20px}
+.settings-item-label{flex:1;font-weight:500}
+.settings-item-arrow{color:#C7C7CC;font-size:18px}
+
+/* Materials screen */
+#materials-overlay{display:none;position:fixed;inset:0;background:#F2F2F7;z-index:260;flex-direction:column}
+#materials-overlay.open{display:flex}
+#materials-screen{display:flex;flex-direction:column;height:100%}
+#materials-list{flex:1;overflow-y:auto;padding:12px;max-width:480px;margin:0 auto;width:100%;box-sizing:border-box}
+.mat-category{background:#fff;border-radius:12px;margin-bottom:10px;overflow:hidden;transition:transform 0.15s ease, box-shadow 0.15s ease}
+.mat-category.dragging{opacity:0.4}
+.mat-category.drag-over{box-shadow:0 0 0 2px #185FA5 inset}
+.mat-drag-handle{font-size:16px;color:#C7C7CC;padding:0 4px;cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent}
+.mat-item-row{transition:transform 0.15s ease}
+.mat-item-row.dragging{opacity:0.4}
+.mat-item-row.drag-over{box-shadow:0 -2px 0 #185FA5 inset}
+.mat-category-header{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mat-category-title{font-size:14px;font-weight:600;color:#1C1C1E;flex:1}
+.mat-category-count{font-size:12px;color:#8E8E93;margin-right:8px}
+.mat-category-chevron{color:#8E8E93;font-size:14px;transition:transform 0.2s;display:inline-block}
+.mat-category-chevron.open{transform:rotate(90deg)}
+.mat-category-actions{display:flex;gap:6px}
+.mat-icon-btn{background:none;border:none;font-size:15px;cursor:pointer;color:#8E8E93;padding:2px 4px;-webkit-tap-highlight-color:transparent}
+.mat-items{display:none;border-top:0.5px solid #F0F0F0}
+.mat-items.open{display:block}
+.mat-item-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid #F5F5F5;font-size:13px;color:#1C1C1E}
+.mat-item-row:last-child{border-bottom:none}
+.mat-item-delete{background:none;border:none;color:#E24B4A;font-size:16px;cursor:pointer;padding:0 4px;-webkit-tap-highlight-color:transparent}
+.mat-add-item-row{display:flex;gap:6px;padding:10px 14px;border-top:0.5px solid #F0F0F0}
+.mat-add-item-input{flex:1;padding:8px 10px;border-radius:8px;border:1px solid #E0E0E0;font-size:13px}
+.mat-add-item-btn{background:#185FA5;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#add-category-btn{margin:10px 12px 20px;padding:13px;border-radius:12px;background:#E6F1FB;color:#185FA5;border:1.5px dashed #AAC8E8;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;max-width:456px;width:calc(100% - 24px);align-self:center}
+.mat-empty{text-align:center;padding:50px 20px;color:#8E8E93;font-size:13px}
+
+/* Map picker */
+#picker-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;padding:20px}
+#picker-overlay.open{display:flex}
+#picker-box{background:#fff;border-radius:18px;width:100%;max-width:340px;padding:20px;text-align:center}
+#picker-box h3{font-size:16px;font-weight:600;color:#1C1C1E;margin-bottom:6px}
+#picker-box p{font-size:13px;color:#8E8E93;margin-bottom:18px;line-height:1.4}
+.picker-btn{display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid #E0E0E0;background:#fff;font-size:15px;font-weight:500;color:#1C1C1E;cursor:pointer;margin-bottom:10px;-webkit-tap-highlight-color:transparent;text-align:left}
+.picker-btn .picon{font-size:22px}
+.picker-cancel{font-size:14px;color:#8E8E93;background:none;border:none;cursor:pointer;padding:8px;margin-top:2px}
+
+/* Comment modal */
+#comment-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:320;align-items:center;justify-content:center;padding:20px}
+#comment-overlay.open{display:flex}
+#comment-box{background:#fff;border-radius:18px;width:100%;max-width:380px;padding:20px}
+#comment-box h3{font-size:16px;font-weight:600;color:#1C1C1E;margin-bottom:14px}
+#comment-textarea{width:100%;min-height:120px;border-radius:12px;border:1.5px solid #E0E0E0;padding:12px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;color:#1C1C1E}
+#comment-textarea:focus{border-color:#185FA5;outline:none}
+#comment-error{color:#A32D2D;font-size:12px;margin-top:6px;min-height:16px}
+#comment-buttons{display:flex;gap:10px;margin-top:14px}
+#comment-submit-btn{flex:1;padding:12px;border-radius:12px;background:#185FA5;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#comment-submit-btn:disabled{opacity:0.6}
+#comment-close-btn{flex:1;padding:12px;border-radius:12px;background:#F2F2F7;color:#1C1C1E;border:none;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-logo">📋</div>
+    <div class="login-title">ГЕККО І КО</div>
+    <div class="login-sub">Увійдіть, щоб побачити свої заявки</div>
+    <input type="text" id="login-input" class="login-input" placeholder="Логін" autocomplete="username">
+    <input type="password" id="password-input" class="login-input" placeholder="Пароль" autocomplete="current-password">
+    <label class="remember-row">
+      <input type="checkbox" id="remember-checkbox" checked>
+      <span>Запам'ятати мене</span>
+    </label>
+    <button class="login-btn" id="login-btn">Увійти</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main-screen">
+    <div id="header">
+      <div id="header-top">
+        <h1>Мої заявки</h1>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="user-badge"></span>
+          <button id="refresh-btn">↻</button>
+          <button id="settings-btn">⚙️</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div id="stats"></div>
+        <button id="logout-btn">вийти</button>
+      </div>
+    </div>
+    <div id="cards">
+      <div id="loading">Завантаження...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div id="settings-overlay">
+  <div id="settings-screen">
+    <div id="settings-header">
+      <div id="settings-header-inner">
+        <button id="settings-back-btn">←</button>
+        <span>Налаштування</span>
+      </div>
+    </div>
+    <div id="settings-menu">
+      <button class="settings-item" id="open-materials-btn">
+        <span class="settings-item-icon">📦</span>
+        <span class="settings-item-label">Мої матеріали</span>
+        <span class="settings-item-arrow">›</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MATERIALS SCREEN -->
+<div id="materials-overlay">
+  <div id="materials-screen">
+    <div id="settings-header">
+      <div id="settings-header-inner">
+        <button id="materials-back-btn">←</button>
+        <span>Мої матеріали</span>
+      </div>
+    </div>
+    <div id="materials-list"></div>
+    <button id="add-category-btn">+ Додати категорію</button>
+  </div>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <div class="modal-handle"></div>
+    <span class="modal-close" id="modal-close">✕</span>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<div id="picker-overlay">
+  <div id="picker-box">
+    <h3>Відкрити на карті</h3>
+    <p>Оберіть додаток. Вибір буде збережено.</p>
+    <button class="picker-btn" onclick="pickMap('2gis')"><span class="picon">🗺</span><span>2GIS</span></button>
+    <button class="picker-btn" onclick="pickMap('google')"><span class="picon">📍</span><span>Google Maps</span></button>
+    <button class="picker-btn" onclick="pickMap('apple')"><span class="picon">🍏</span><span>Apple Maps</span></button>
+    <button class="picker-cancel" onclick="closePicker()">Скасувати</button>
+  </div>
+</div>
+
+<div id="comment-overlay">
+  <div id="comment-box">
+    <h3>Додати коментар</h3>
+    <textarea id="comment-textarea" placeholder="Опис проблеми, від себе, і як ти її вирішив"></textarea>
+    <div id="comment-error"></div>
+    <div id="comment-buttons">
+      <button id="comment-submit-btn">Додати коментар</button>
+      <button id="comment-close-btn">Закрити</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// !!! ВАЖЛИВО: встав сюди своє посилання Web App з Apps Script !!!
+const API_URL = 'https://script.google.com/macros/s/AKfycbywLfOHXlGgqtLzE0-4Y7_ZgJ6YVrrnstDkBMvCxg_3dv6S2_Pk1EMN5zwxk4iKsXbMwA/exec';
+
+let currentUser = null;
+let tickets = [];
+let pendingAddr = null;
+
+// ---------- Storage helpers (мобільна пам'ять входу / вибору карти) ----------
+function saveSession(user){ try{ localStorage.setItem('gekko_user', JSON.stringify(user)); }catch(e){} }
+function loadSession(){ try{ return JSON.parse(localStorage.getItem('gekko_user')); }catch(e){ return null; } }
+function clearSession(){ try{ localStorage.removeItem('gekko_user'); }catch(e){} }
+function getMapApp(){ try{ return localStorage.getItem('mapApp'); }catch(e){ return null; } }
+function setMapApp(a){ try{ localStorage.setItem('mapApp', a); }catch(e){} }
+
+// ---------- API ----------
+async function apiGet(action, params={}){
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+async function apiPost(action, params={}, body={}){
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString(), { method: 'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+// ---------- Auth ----------
+async function doLogin(){
+  const login = document.getElementById('login-input').value.trim();
+  const password = document.getElementById('password-input').value.trim();
+  const remember = document.getElementById('remember-checkbox').checked;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if(!login || !password){ errEl.textContent = 'Заповніть обидва поля'; return; }
+  document.getElementById('login-btn').textContent = 'Вхід...';
+  try{
+    const data = await apiGet('login', { login, password });
+    if(data.ok){
+      currentUser = data.user;
+      if(remember) saveSession(currentUser);
+      else clearSession();
+      showMain();
+    } else {
+      errEl.textContent = data.error || 'Помилка входу';
+    }
+  } catch(e){
+    errEl.textContent = 'Немає з\'єднання. Перевірте інтернет.';
+  }
+  document.getElementById('login-btn').textContent = 'Увійти';
+}
+
+function doLogout(){
+  clearSession();
+  currentUser = null;
+  document.getElementById('main-screen').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('login-input').value='';
+  document.getElementById('password-input').value='';
+}
+
+function showMain(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.add('visible');
+  document.getElementById('user-badge').textContent = currentUser.display_name;
+  loadTickets();
+}
+
+// ---------- Tickets ----------
+function hColor(h){return h>=24?'red':h>=8?'amber':'green';}
+function hLabel(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60);return hh+'г '+mm+'хв';}
+
+// Форматує дату у вигляд DD-MM-YYYY HH:MM
+// Підтримує: ISO-рядки з Apps Script (2026-06-27T21:00:00.000Z), вже відформатовані dd.mm.yyyy hh:mm
+function formatDateDisplay(raw){
+  if(!raw) return '';
+  const s = String(raw).trim();
+  // ISO формат з Apps Script
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(iso){
+    const [,yyyy,mm,dd,hh,min] = iso;
+    return `${dd}-${mm}-${yyyy} ${hh}:${min}`;
+  }
+  // Формат dd.mm.yyyy hh:mm (вже відформатований при імпорті)
+  const dot = s.match(/^(\d{2})\.(\d{2})\.(\d{4})(?:\s+(\d{2}):(\d{2}))?/);
+  if(dot){
+    const [,dd,mm,yyyy,hh,min] = dot;
+    return hh ? `${dd}-${mm}-${yyyy} ${hh}:${min}` : `${dd}-${mm}-${yyyy}`;
+  }
+  return s;
+}
+
+async function loadTickets(){
+  document.getElementById('cards').innerHTML = '<div id="loading">Завантаження...</div>';
+  try {
+    const data = await apiGet('getTickets', { login: currentUser.login });
+    if(data.ok){
+      tickets = data.tickets.map(t=>({...t, hours: parseFloat(t.hours)||0, prio: parseInt(t.prio)||4}));
+      renderStats();
+      renderCards();
+    } else {
+      document.getElementById('cards').innerHTML = '<div id="empty"><span class="icon">⚠️</span><p>'+(data.error||'Помилка')+'</p></div>';
+    }
+  } catch(e){
+    document.getElementById('cards').innerHTML = '<div id="empty"><span class="icon">📡</span><p>Немає з\'єднання</p><span class="hint">Перевірте інтернет і спробуйте ще раз</span></div>';
+  }
+}
+
+function getVisible(){
+  return [...tickets].sort((a,b)=>b.hours-a.hours);
+}
+function getTicketById(id){ return tickets.find(t=>String(t.id)===String(id)) || null; }
+
+function renderStats(){
+  const t = getVisible();
+  document.getElementById('stats').innerHTML =
+    `<span class="stat-pill" style="background:#FEE2E2;color:#A32D2D">${t.filter(x=>x.hours>=24).length} крит.</span>`+
+    `<span class="stat-pill" style="background:#FEF3C7;color:#854F0B">${t.filter(x=>x.hours>=8&&x.hours<24).length} важл.</span>`+
+    `<span class="stat-pill" style="background:#EAF3DE;color:#3B6D11">${t.filter(x=>x.hours<8).length} нові</span>`;
+}
+
+function renderCards(){
+  const tv = getVisible();
+  const cont = document.getElementById('cards');
+  if(!tv.length){
+    cont.innerHTML = '<div id="empty"><span class="icon">📭</span><p>Немає призначених заявок</p><span class="hint">Адміністратор ще не призначив вам заявки</span></div>';
+    return;
+  }
+  cont.innerHTML = tv.map(t=>{
+    const cl = hColor(t.hours);
+    const addrRaw = String(t.addrRaw||'').split(';')[0].trim();
+    const addrRawClean = addrRaw.indexOf(' (Район')>0 ? addrRaw.substring(0,addrRaw.indexOf(' (Район')).trim() : addrRaw;
+    const addr = t.addr || addrRawClean;
+    const sa = addr.length>50 ? addr.substring(0,50)+'…' : addr;
+    const pr = String(t.problem||'').length>60 ? String(t.problem).substring(0,60)+'…' : t.problem;
+    const addrEsc = addr.replace(/"/g,'&quot;');
+    return `<div class="card-wrap" id="wrap-${t.id}">
+      <div class="card-delete-bg">🗑</div>
+      <div class="card ${cl}" id="card-${t.id}" data-id="${t.id}">
+        <div class="card-top">
+          <span class="card-time ${cl}">⏱ ${hLabel(t.hours)}</span>
+          <div class="card-right"><span class="card-zayav">${t.zayav}</span>${t.isFreenet?'<span class="freenet-badge">FREENET</span>':''}</div>
+        </div>
+        <div class="card-addr">${sa || 'Адресу не вказано'}</div>
+        <div class="card-prob">${pr||''}</div>
+        <div class="card-footer">
+          <span class="card-resp"></span>
+          <div class="card-footer-right">
+            <span class="card-prio prio-${t.prio}">Піор. ${t.prio}</span>
+            ${addr?`<button class="card-map-btn" data-addr="${addrEsc}" onclick="event.stopPropagation();openMapFor(this.dataset.addr)">📍</button>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  attachSwipe();
+}
+
+function attachSwipe(){
+  document.querySelectorAll('.card').forEach(card=>{
+    let sx=0,sy=0,cx=0,sw=false,ms=false;
+    card.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;cx=0;sw=false;ms=true;},{passive:true});
+    card.addEventListener('touchmove',e=>{
+      if(!ms)return;
+      const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+      if(!sw&&Math.abs(dy)>Math.abs(dx)){ms=false;return;}
+      if(Math.abs(dx)>8)sw=true;
+      if(!sw)return;
+      e.preventDefault();cx=Math.min(0,dx);card.style.transform=`translateX(${cx}px)`;
+    },{passive:false});
+    card.addEventListener('touchend',()=>{
+      if(!sw){card.style.transform='';return;}
+      if(cx<-80) dismiss(card.dataset.id);
+      else { card.style.transform=''; card.style.transition='transform 0.2s'; setTimeout(()=>card.style.transition='',200); }
+      sw=false; ms=false;
+    });
+    card.addEventListener('click',()=>{ if(Math.abs(cx)>5) return; openModal(card.dataset.id); });
+  });
+}
+
+async function dismiss(id){
+  const card = document.getElementById('card-'+id);
+  const wrap = document.getElementById('wrap-'+id);
+  if(!card) return;
+  card.classList.add('dismissing');
+  // Server-side hide
+  apiGet('hideTicket', { ticketId: id, login: currentUser.login }).catch(()=>{});
+  setTimeout(()=>{
+    tickets = tickets.filter(t=>String(t.id)!==String(id));
+    wrap.style.transition='max-height 0.2s,opacity 0.2s,margin 0.2s';
+    wrap.style.maxHeight = wrap.offsetHeight+'px'; wrap.style.overflow='hidden';
+    requestAnimationFrame(()=>{ wrap.style.maxHeight='0'; wrap.style.opacity='0'; wrap.style.marginBottom='0'; });
+    setTimeout(()=>{ wrap.remove(); renderStats(); },220);
+  },250);
+}
+
+function openModal(id){
+  const t = getTicketById(id); if(!t) return;
+  const addrRaw2 = String(t.addrRaw||'').split(';')[0].trim();
+  const addr = t.addr || (addrRaw2.indexOf(' (Район')>0 ? addrRaw2.substring(0,addrRaw2.indexOf(' (Район')).trim() : addrRaw2);
+  const cl = hColor(t.hours), clr = cl==='red'?'#A32D2D':cl==='amber'?'#854F0B':'#3B6D11';
+
+  // Список усіх телефонів (можуть бути кілька, через кому)
+  const phonesList = String(t.phones||t.phone||'').split(',').map(p=>p.trim()).filter(Boolean);
+  const phonesHtml = phonesList.length
+    ? phonesList.map(p=>`<a href="tel:${p}" style="color:#185FA5;margin-right:10px">${p}</a>`).join('')
+    : '';
+
+  document.getElementById('modal-content').innerHTML =
+    `<div class="modal-num">Заявка №${t.zayav}${t.isFreenet?' <span class="freenet-badge">FREENET</span>':''}</div>
+     <div class="modal-addr">${addr||'Адресу не вказано'}</div>
+     <div class="modal-row"><span class="modal-label">Час у службі</span><span class="modal-val" style="color:${clr};font-weight:600">${hLabel(t.hours)}</span></div>
+     <div class="modal-row"><span class="modal-label">Дата</span><span class="modal-val">${formatDateDisplay(t.date)}</span></div>
+     <div class="modal-row"><span class="modal-label">Пріоритет</span><span class="modal-val">${t.prio}</span></div>
+     <div class="modal-divider"></div>
+     <div class="modal-row"><span class="modal-label">Абонент</span><span class="modal-val">${t.name||''}</span></div>
+     ${phonesHtml?`<div class="modal-row"><span class="modal-label">Телефон</span><span class="modal-val">${phonesHtml}</span></div>`:''}
+     <div class="modal-row"><span class="modal-label">Сервіс</span><span class="modal-val">${t.service||''}</span></div>
+     ${t.account?`<div class="modal-row"><span class="modal-label">Особ. рахунок</span><span class="modal-val">${t.account}</span></div>`:''}
+     ${t.plannedDate?`<div class="modal-row"><span class="modal-label">Планова дата</span><span class="modal-val">${formatDateDisplay(t.plannedDate)}</span></div>`:''}
+     <div class="modal-divider"></div>
+     <div class="modal-row"><span class="modal-label">Проблема</span><span class="modal-val">${t.problem||''}</span></div>
+     ${t.comment&&t.comment!=='nan'?`<div class="modal-row"><span class="modal-label">Коментар</span><span class="modal-val">${t.comment}</span></div>`:''}
+     <button class="modal-map-btn" onclick="openCommentModal('${t.id}')">💬 Додати коментар</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+let activeCommentTicketId = null;
+
+function openCommentModal(ticketId){
+  activeCommentTicketId = ticketId;
+  document.getElementById('comment-textarea').value = '';
+  document.getElementById('comment-error').textContent = '';
+  document.getElementById('comment-overlay').classList.add('open');
+}
+function closeCommentModal(){
+  document.getElementById('comment-overlay').classList.remove('open');
+  activeCommentTicketId = null;
+}
+async function submitComment(){
+  const textarea = document.getElementById('comment-textarea');
+  const errEl = document.getElementById('comment-error');
+  const text = textarea.value.trim();
+  if(!text){ errEl.textContent = 'Введіть текст коментаря'; return; }
+  if(!activeCommentTicketId){ errEl.textContent = 'Помилка: заявку не визначено'; return; }
+
+  const btn = document.getElementById('comment-submit-btn');
+  btn.disabled = true; btn.textContent = 'Додавання...';
+  errEl.textContent = '';
+  try{
+    const data = await apiPost('addComment', {}, { ticketId: activeCommentTicketId, login: currentUser.login, comment: text });
+    if(data.ok){
+      // Оновлюємо локальний коментар заявки, щоб одразу побачити в деталях
+      const t = getTicketById(activeCommentTicketId);
+      if(t){
+        const entry = '[' + (data.commentDate||'') + ', ' + currentUser.login + ']: ' + text;
+        t.comment_from_executor = t.comment_from_executor ? (t.comment_from_executor + '\n' + entry) : entry;
+      }
+      closeCommentModal();
+      // Перевідкриваємо деталі заявки, щоб показати оновлений коментар (якщо потрібно)
+    } else {
+      errEl.textContent = data.error || 'Помилка додавання коментаря';
+    }
+  } catch(e){
+    errEl.textContent = 'Немає з\'єднання. Перевірте інтернет.';
+  }
+  btn.disabled = false; btn.textContent = 'Додати коментар';
+}
+document.getElementById('comment-submit-btn').onclick = submitComment;
+document.getElementById('comment-close-btn').onclick = closeCommentModal;
+document.getElementById('comment-overlay').onclick = function(e){ if(e.target===this) closeCommentModal(); };
+
+// ---------- Map ----------
+function openMapFor(addr){
+  if(!addr) return;
+  const app = getMapApp();
+  if(!app){ pendingAddr = addr; document.getElementById('picker-overlay').classList.add('open'); }
+  else launchMap(app, addr);
+}
+function launchMap(app, addr){
+  const q = encodeURIComponent('Дніпро, '+addr);
+  if(app==='2gis') window.open('https://2gis.com/search/'+q,'_blank');
+  else if(app==='google') window.open('https://www.google.com/maps/search/?api=1&query='+q,'_blank');
+  else if(app==='apple') window.open('https://maps.apple.com/?q='+q,'_blank');
+}
+function pickMap(app){ setMapApp(app); closePicker(); if(pendingAddr){ launchMap(app,pendingAddr); pendingAddr=null; } }
+function closePicker(){ document.getElementById('picker-overlay').classList.remove('open'); }
+
+// ---------- Events ----------
+document.getElementById('login-btn').onclick = doLogin;
+document.getElementById('password-input').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('logout-btn').onclick = doLogout;
+document.getElementById('refresh-btn').onclick = loadTickets;
+document.getElementById('modal-close').onclick = ()=>document.getElementById('modal-overlay').classList.remove('open');
+document.getElementById('modal-overlay').onclick = function(e){ if(e.target===this) this.classList.remove('open'); };
+document.getElementById('picker-overlay').onclick = function(e){ if(e.target===this) closePicker(); };
+
+// ---------- Settings screen ----------
+function openSettings(){ document.getElementById('settings-overlay').classList.add('open'); }
+function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
+
+// ---------- Materials ----------
+let materialsData = {};
+let openCategories = new Set();
+
+async function openMaterials(){
+  document.getElementById('materials-overlay').classList.add('open');
+  await loadMaterials();
+}
+function closeMaterials(){ document.getElementById('materials-overlay').classList.remove('open'); }
+
+async function loadMaterials(){
+  document.getElementById('materials-list').innerHTML = '<div class="mat-empty">Завантаження...</div>';
+  try{
+    const data = await apiGet('getMaterials', { login: currentUser.login });
+    if(data.ok){
+      materialsData = data.categories || {};
+      renderMaterials();
+    } else {
+      document.getElementById('materials-list').innerHTML = '<div class="mat-empty">⚠️ '+(data.error||'Помилка')+'</div>';
+    }
+  } catch(e){
+    document.getElementById('materials-list').innerHTML = '<div class="mat-empty">📡 Немає з\'єднання</div>';
+  }
+}
+
+function renderMaterials(){
+  const cont = document.getElementById('materials-list');
+  const cats = Object.keys(materialsData);
+  if(!cats.length){
+    cont.innerHTML = '<div class="mat-empty">Поки немає категорій.<br>Додайте першу нижче 👇</div>';
+    return;
+  }
+  cont.innerHTML = cats.map((cat,catIdx)=>{
+    const items = materialsData[cat] || [];
+    const isOpen = openCategories.has(cat);
+    const catEsc = cat.replace(/"/g,'&quot;');
+    return `<div class="mat-category" data-category="${catEsc}" data-cat-idx="${catIdx}">
+      <div class="mat-category-header">
+        <span class="mat-drag-handle mat-cat-handle" data-cat-idx="${catIdx}">⠿</span>
+        <span class="mat-category-chevron ${isOpen?'open':''}" onclick="toggleCategory('${catEsc}')" style="flex:0">›</span>
+        <span class="mat-category-title" onclick="toggleCategory('${catEsc}')">${cat}</span>
+        <span class="mat-category-count">${items.length}</span>
+        <div class="mat-category-actions">
+          <button class="mat-icon-btn" onclick="event.stopPropagation();renameCategoryPrompt('${catEsc}')">✏️</button>
+          <button class="mat-icon-btn" onclick="event.stopPropagation();deleteCategoryConfirm('${catEsc}')">🗑</button>
+        </div>
+      </div>
+      <div class="mat-items ${isOpen?'open':''}" data-category="${catEsc}">
+        ${items.map((item,itemIdx)=>{
+          const itemEsc = item.replace(/"/g,'&quot;');
+          return `<div class="mat-item-row" data-category="${catEsc}" data-item="${itemEsc}" data-item-idx="${itemIdx}">
+            <span class="mat-drag-handle mat-item-handle">⠿</span>
+            <span style="flex:1">${item}</span>
+            <button class="mat-icon-btn" onclick="editMaterialPrompt('${catEsc}','${itemEsc}')">✏️</button>
+            <button class="mat-item-delete" onclick="deleteMaterialItem('${catEsc}','${itemEsc}')">✕</button>
+          </div>`;
+        }).join('')}
+        <div class="mat-add-item-row">
+          <input type="text" class="mat-add-item-input" placeholder="Нова позиція..." id="add-item-input-${catIdx}">
+          <button class="mat-add-item-btn" onclick="addMaterialItem('${catEsc}', ${catIdx})">+</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  attachMaterialDrag();
+}
+
+function toggleCategory(cat){
+  if(openCategories.has(cat)) openCategories.delete(cat);
+  else openCategories.add(cat);
+  renderMaterials();
+}
+
+async function addMaterialItem(category, idx){
+  const input = document.getElementById('add-item-input-'+idx);
+  const itemName = input.value.trim();
+  if(!itemName) return;
+  try{
+    const data = await apiGet('addMaterial', { login: currentUser.login, category, itemName });
+    if(data.ok){
+      if(!materialsData[category]) materialsData[category] = [];
+      materialsData[category].push(itemName);
+      openCategories.add(category);
+      renderMaterials();
+    } else {
+      alert(data.error || 'Помилка додавання');
+    }
+  } catch(e){ alert('Немає з\'єднання'); }
+}
+
+async function deleteMaterialItem(category, itemName){
+  try{
+    const data = await apiGet('deleteMaterial', { login: currentUser.login, category, itemName });
+    if(data.ok){
+      materialsData[category] = (materialsData[category]||[]).filter(i=>i!==itemName);
+      openCategories.add(category);
+      renderMaterials();
+    }
+  } catch(e){ alert('Немає з\'єднання'); }
+}
+
+async function editMaterialPrompt(category, oldName){
+  const newName = prompt('Редагувати позицію:', oldName);
+  if(!newName || !newName.trim() || newName.trim()===oldName) return;
+  try{
+    const data = await apiGet('editMaterial', { login: currentUser.login, category, oldName, newName: newName.trim() });
+    if(data.ok){
+      const idx = materialsData[category].indexOf(oldName);
+      if(idx>-1) materialsData[category][idx] = newName.trim();
+      openCategories.add(category);
+      renderMaterials();
+    } else { alert(data.error||'Помилка'); }
+  } catch(e){ alert('Немає з\'єднання'); }
+}
+
+async function deleteCategoryConfirm(category){
+  if(!confirm(`Видалити категорію "${category}" і всі позиції в ній?`)) return;
+  try{
+    const data = await apiGet('deleteCategory', { login: currentUser.login, category });
+    if(data.ok){
+      delete materialsData[category];
+      openCategories.delete(category);
+      renderMaterials();
+    }
+  } catch(e){ alert('Немає з\'єднання'); }
+}
+
+async function renameCategoryPrompt(oldName){
+  const newName = prompt('Нова назва категорії:', oldName);
+  if(!newName || !newName.trim() || newName.trim()===oldName) return;
+  try{
+    const data = await apiGet('renameCategory', { login: currentUser.login, oldName, newName: newName.trim() });
+    if(data.ok){
+      // Відтворюємо порядок категорій, замінюючи стару назву на нову
+      const reordered = {};
+      Object.keys(materialsData).forEach(k=>{
+        const key = (k===oldName) ? newName.trim() : k;
+        reordered[key] = materialsData[k];
+      });
+      materialsData = reordered;
+      if(openCategories.has(oldName)){ openCategories.delete(oldName); openCategories.add(newName.trim()); }
+      renderMaterials();
+    } else { alert(data.error||'Помилка'); }
+  } catch(e){ alert('Немає з\'єднання'); }
+}
+
+function addCategoryPrompt(){
+  const name = prompt('Назва нової категорії:');
+  if(!name || !name.trim()) return;
+  const trimmed = name.trim();
+  if(materialsData[trimmed]){ alert('Така категорія вже є'); return; }
+  materialsData[trimmed] = [];
+  openCategories.add(trimmed);
+  renderMaterials();
+}
+
+// ---------- Drag & drop (touch) для категорій і позицій ----------
+function attachMaterialDrag(){
+  // --- Категорії ---
+  const catHandles = document.querySelectorAll('.mat-cat-handle');
+  catHandles.forEach(handle=>{
+    let dragEl=null, startY=0, placeholder=null, allCats=[];
+
+    handle.addEventListener('touchstart', e=>{
+      dragEl = handle.closest('.mat-category');
+      allCats = Array.from(document.querySelectorAll('.mat-category'));
+      startY = e.touches[0].clientY;
+      dragEl.classList.add('dragging');
+      dragEl.style.position='relative';
+      dragEl.style.zIndex='50';
+      e.preventDefault();
+    },{passive:false});
+
+    handle.addEventListener('touchmove', e=>{
+      if(!dragEl) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const dy = y - startY;
+      dragEl.style.transform = `translateY(${dy}px)`;
+
+      // Знаходимо над яким елементом зараз палець
+      allCats.forEach(c=>c.classList.remove('drag-over'));
+      const target = allCats.find(c=>{
+        if(c===dragEl) return false;
+        const r = c.getBoundingClientRect();
+        return y > r.top && y < r.bottom;
+      });
+      if(target) target.classList.add('drag-over');
+    },{passive:false});
+
+    handle.addEventListener('touchend', e=>{
+      if(!dragEl) return;
+      const y = e.changedTouches[0].clientY;
+      const target = allCats.find(c=>{
+        if(c===dragEl) return false;
+        const r = c.getBoundingClientRect();
+        return y > r.top && y < r.bottom;
+      });
+      dragEl.classList.remove('dragging');
+      dragEl.style.transform='';
+      dragEl.style.position='';
+      dragEl.style.zIndex='';
+      allCats.forEach(c=>c.classList.remove('drag-over'));
+
+      if(target){
+        const fromIdx = parseInt(dragEl.dataset.catIdx);
+        const toIdx = parseInt(target.dataset.catIdx);
+        const cats = Object.keys(materialsData);
+        const [moved] = cats.splice(fromIdx,1);
+        cats.splice(toIdx,0,moved);
+        const reordered = {};
+        cats.forEach(c=>{ reordered[c]=materialsData[c]; });
+        materialsData = reordered;
+        renderMaterials();
+        apiPost('reorderCategories', {}, { login: currentUser.login, orderedCategories: cats }).catch(()=>{});
+      }
+      dragEl=null;
+    },{passive:true});
+  });
+
+  // --- Позиції всередині категорій ---
+  const itemHandles = document.querySelectorAll('.mat-item-handle');
+  itemHandles.forEach(handle=>{
+    let dragEl=null, startY=0, siblings=[], category=null;
+
+    handle.addEventListener('touchstart', e=>{
+      dragEl = handle.closest('.mat-item-row');
+      category = dragEl.dataset.category;
+      siblings = Array.from(dragEl.parentElement.querySelectorAll('.mat-item-row'));
+      startY = e.touches[0].clientY;
+      dragEl.classList.add('dragging');
+      dragEl.style.position='relative';
+      dragEl.style.zIndex='50';
+      dragEl.style.background='#fff';
+      e.preventDefault();
+    },{passive:false});
+
+    handle.addEventListener('touchmove', e=>{
+      if(!dragEl) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const dy = y - startY;
+      dragEl.style.transform = `translateY(${dy}px)`;
+
+      siblings.forEach(s=>s.classList.remove('drag-over'));
+      const target = siblings.find(s=>{
+        if(s===dragEl) return false;
+        const r = s.getBoundingClientRect();
+        return y > r.top && y < r.bottom;
+      });
+      if(target) target.classList.add('drag-over');
+    },{passive:false});
+
+    handle.addEventListener('touchend', e=>{
+      if(!dragEl) return;
+      const y = e.changedTouches[0].clientY;
+      const target = siblings.find(s=>{
+        if(s===dragEl) return false;
+        const r = s.getBoundingClientRect();
+        return y > r.top && y < r.bottom;
+      });
+      dragEl.classList.remove('dragging');
+      dragEl.style.transform='';
+      dragEl.style.position='';
+      dragEl.style.zIndex='';
+      dragEl.style.background='';
+      siblings.forEach(s=>s.classList.remove('drag-over'));
+
+      if(target){
+        const fromIdx = parseInt(dragEl.dataset.itemIdx);
+        const toIdx = parseInt(target.dataset.itemIdx);
+        const items = materialsData[category];
+        const [moved] = items.splice(fromIdx,1);
+        items.splice(toIdx,0,moved);
+        openCategories.add(category);
+        renderMaterials();
+        apiPost('reorderItems', {}, { login: currentUser.login, category, orderedNames: items }).catch(()=>{});
+      }
+      dragEl=null;
+    },{passive:true});
+  });
+}
+
+document.getElementById('settings-btn').onclick = openSettings;
+document.getElementById('settings-back-btn').onclick = closeSettings;
+document.getElementById('open-materials-btn').onclick = openMaterials;
+document.getElementById('materials-back-btn').onclick = closeMaterials;
+document.getElementById('add-category-btn').onclick = addCategoryPrompt;
+
+// ---------- Init: auto-login if session exists ----------
+(function init(){
+  const saved = loadSession();
+  if(saved){ currentUser = saved; showMain(); }
+})();
+</script>
+</body>
+</html>

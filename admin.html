@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ГЕККО І КО — Панель диспетчера</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F2F2F7;min-height:100vh;color:#1C1C1E}
+#app{max-width:1200px;margin:0 auto;padding:20px}
+
+/* Login */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90vh}
+#login-screen.hidden{display:none}
+.login-logo{font-size:56px;margin-bottom:8px}
+.login-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.login-sub{font-size:14px;color:#8E8E93;margin-bottom:28px}
+.login-input{width:320px;padding:14px 16px;border-radius:12px;border:1.5px solid #E0E0E0;font-size:16px;margin-bottom:12px;background:#fff}
+.login-input:focus{border-color:#185FA5;outline:none}
+.login-btn{width:320px;padding:14px;border-radius:12px;background:#185FA5;color:#fff;border:none;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px}
+.login-btn:hover{opacity:0.9}
+.login-error{color:#A32D2D;font-size:13px;margin-top:10px;min-height:18px}
+
+/* Main */
+#main-screen{display:none}
+#main-screen.visible{display:block}
+#top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+#top-bar h1{font-size:22px;font-weight:700}
+#top-actions{display:flex;gap:10px;align-items:center}
+.btn{padding:10px 18px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer}
+.btn-primary{background:#185FA5;color:#fff}
+.btn-primary:hover{background:#13497f}
+.btn-secondary{background:#fff;color:#185FA5;border:1.5px solid #AAC8E8}
+.btn-secondary:hover{background:#E6F1FB}
+#file-input{display:none}
+#user-badge{font-size:13px;color:#185FA5;background:#E6F1FB;padding:6px 12px;border-radius:20px;font-weight:600}
+
+#stats-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.stat-card{background:#fff;border-radius:12px;padding:14px 20px;flex:1;min-width:120px}
+.stat-card .num{font-size:26px;font-weight:700}
+.stat-card .label{font-size:12px;color:#8E8E93;margin-top:2px}
+
+#filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-chip{font-size:13px;padding:7px 16px;border-radius:20px;border:1px solid #C7C7CC;background:#fff;color:#8E8E93;cursor:pointer;font-weight:500}
+.filter-chip.active{background:#E6F1FB;color:#185FA5;border-color:#378ADD;font-weight:600}
+.unassigned-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:#1C1C1E;padding:7px 12px;border-radius:20px;border:1px solid #C7C7CC;background:#fff;white-space:nowrap}
+.unassigned-toggle input[type="checkbox"]{width:16px;height:16px;accent-color:#185FA5;cursor:pointer}
+.unassigned-toggle:has(input:checked){background:#FEF3C7;border-color:#EF9F27;color:#854F0B}
+#search-input{flex:1;min-width:200px;padding:8px 14px;border-radius:20px;border:1px solid #C7C7CC;font-size:13px}
+
+#table-wrap{background:#fff;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#F2F2F7;padding:10px 12px;text-align:left;font-weight:600;color:#1C1C1E;position:sticky;top:0}
+td{padding:10px 12px;border-bottom:1px solid #F0F0F0;vertical-align:top}
+tr:hover td{background:#FAFAFA}
+.cell-zayav{font-weight:600;color:#185FA5}
+.cell-hours{font-weight:600;white-space:nowrap}
+.cell-hours.red{color:#A32D2D}.cell-hours.amber{color:#854F0B}.cell-hours.green{color:#3B6D11}
+.cell-addr{max-width:220px}
+.cell-prob{max-width:260px;color:#666}
+.cell-exec-comment{max-width:260px;color:#185FA5;font-size:12px;white-space:pre-wrap}
+.freenet-badge{font-size:10px;padding:2px 6px;border-radius:10px;background:#E6F1FB;color:#185FA5;font-weight:600;margin-left:4px}
+select.assign-select{padding:6px 8px;border-radius:8px;border:1px solid #C7C7CC;font-size:13px;background:#fff;min-width:130px}
+select.assign-select.assigned{border-color:#639922;background:#EAF3DE}
+
+#empty-state{text-align:center;padding:80px 20px;color:#8E8E93}
+#empty-state .icon{font-size:56px;display:block;margin-bottom:16px}
+#loading-row{text-align:center;padding:40px;color:#8E8E93}
+
+#toast{position:fixed;bottom:24px;right:24px;background:#1C1C1E;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-logo">🖥️</div>
+    <div class="login-title">ГЕККО І КО — Диспетчер</div>
+    <div class="login-sub">Вхід для адміністратора</div>
+    <input type="text" id="login-input" class="login-input" placeholder="Логін">
+    <input type="password" id="password-input" class="login-input" placeholder="Пароль">
+    <button class="login-btn" id="login-btn">Увійти</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main-screen">
+    <div id="top-bar">
+      <h1>📋 Заявки ГЕККО І КО</h1>
+      <div id="top-actions">
+        <span id="user-badge"></span>
+        <label class="btn btn-secondary" for="file-input" style="cursor:pointer">⬆ Імпорт xls</label>
+        <input type="file" id="file-input" accept=".xls,.xlsx">
+        <button class="btn btn-secondary" id="refresh-btn">↻ Оновити</button>
+        <button class="btn btn-secondary" id="logout-btn">Вийти</button>
+      </div>
+    </div>
+
+    <div id="stats-bar"></div>
+
+    <div id="filter-row">
+      <button class="filter-chip active" data-filter="freenet">FREENET</button>
+      <button class="filter-chip" data-filter="all">Всі заявки</button>
+      <label class="unassigned-toggle">
+        <input type="checkbox" id="unassigned-check">
+        <span>Тільки непризначені</span>
+      </label>
+      <input type="text" id="search-input" placeholder="Пошук за адресою, номером...">
+    </div>
+
+    <div id="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Час</th><th>№ Заявки</th><th>Адреса</th><th>Проблема</th><th>Пріор.</th><th>Призначити</th><th>Опис від виконавця</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="7" id="loading-row">Завантаження...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// !!! ВАЖЛИВО: те саме посилання Web App, що і в мобільному додатку !!!
+const API_URL = 'https://script.google.com/macros/s/AKfycbywLfOHXlGgqtLzE0-4Y7_ZgJ6YVrrnstDkBMvCxg_3dv6S2_Pk1EMN5zwxk4iKsXbMwA/exec';
+
+let currentUser = null;
+let tickets = [];
+let users = [];
+let filterKey = 'freenet';
+let searchTerm = '';
+let showUnassignedOnly = false;
+
+// ---------- Storage ----------
+function saveSession(u){ try{ localStorage.setItem('gekko_admin', JSON.stringify(u)); }catch(e){} }
+function loadSession(){ try{ return JSON.parse(localStorage.getItem('gekko_admin')); }catch(e){ return null; } }
+function clearSession(){ try{ localStorage.removeItem('gekko_admin'); }catch(e){} }
+
+// ---------- API ----------
+async function apiGet(action, params={}){
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+async function apiPost(action, params={}, body={}){
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const res = await fetch(url.toString(), {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ---------- Auth ----------
+async function doLogin(){
+  const login = document.getElementById('login-input').value.trim();
+  const password = document.getElementById('password-input').value.trim();
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if(!login || !password){ errEl.textContent = 'Заповніть обидва поля'; return; }
+  document.getElementById('login-btn').textContent = 'Вхід...';
+  try{
+    const data = await apiGet('login', { login, password });
+    if(data.ok){
+      if(data.user.role !== 'admin'){
+        errEl.textContent = 'Доступ лише для адміністратора';
+        document.getElementById('login-btn').textContent = 'Увійти';
+        return;
+      }
+      currentUser = data.user;
+      saveSession(currentUser);
+      showMain();
+    } else {
+      errEl.textContent = data.error || 'Помилка входу';
+    }
+  } catch(e){
+    errEl.textContent = 'Немає з\'єднання. Перевірте інтернет.';
+  }
+  document.getElementById('login-btn').textContent = 'Увійти';
+}
+function doLogout(){
+  clearSession(); currentUser = null;
+  document.getElementById('main-screen').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+function showMain(){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.add('visible');
+  document.getElementById('user-badge').textContent = '👤 ' + currentUser.display_name;
+  loadAll();
+}
+
+// ---------- Parsing xls (той самий парсер що в мобільному) ----------
+function normalizePhone(raw){
+  // Прибираємо все крім цифр
+  let digits = String(raw).replace(/\D/g,'');
+  // Прибираємо код країни 38 на початку (380XXXXXXXXX -> 0XXXXXXXXX)
+  if(digits.length===12 && digits.startsWith('380')) digits = digits.substring(2);
+  else if(digits.length===11 && digits.startsWith('80')) digits = digits.substring(1);
+  // Якщо немає нуля на початку, але є 9 цифр - додаємо
+  if(digits.length===9) digits = '0'+digits;
+  return digits;
+}
+function parsePhones(r){
+  if(!r) return [];
+  const found = [];
+  // Розбиваємо по всіх можливих розділювачах: ; , та пробіли між номерами
+  const parts = String(r).split(/[;,]/);
+  for(let p of parts){
+    const matches = p.match(/(\+?38)?0\d{9}/g);
+    if(matches){
+      matches.forEach(m=>{
+        const norm = normalizePhone(m);
+        if(norm.length===10 && norm.startsWith('0') && !found.includes(norm)) found.push(norm);
+      });
+    }
+  }
+  return found;
+}
+function parsePhone(r){ const all=parsePhones(r); return all.length?all[0]:''; }
+function parseName(c){if(!c)return'';return String(c).split(';')[0].replace(/\n/g,' ').trim();}
+function parseAddr(c){
+  if(!c)return'';
+  const p=String(c).split(/\n\n/);
+  let addr='';
+  if(p.length>1) addr=p[p.length-1].split(';')[0].trim();
+  else addr=String(c).split(';')[0].trim();
+  const rIdx=addr.indexOf(' (Район');
+  if(rIdx>0) addr=addr.substring(0,rIdx).trim();
+  return addr;
+}
+function cleanAddr(a){
+  if(!a)return'';
+  const rIdx=String(a).indexOf(' (Район');
+  if(rIdx>0)return String(a).substring(0,rIdx).trim();
+  return String(a).trim();
+}
+function parseProblem(r){if(!r)return'';return String(r).split(';')[0].split('\n')[0].trim();}
+function parseResp(r){if(!r)return'';return String(r).replace('ТОВ "ГЕККО І КО" Подрядная организация','').trim();}
+function parseAccountPlan(r){
+  if(!r) return { account:'', plannedDate:'' };
+  const s = String(r);
+  const accMatch = s.match(/Особ\.?\s*рах\.?\s*-?\s*(\d+)/i);
+  const dateMatch = s.match(/Планова\s*дата\s*-?\s*(\d{2}\.\d{2}\.\d{4})/i);
+  return {
+    account: accMatch ? accMatch[1] : '',
+    plannedDate: dateMatch ? dateMatch[1] : ''
+  };
+}
+function formatDateTime(raw){
+  // Вхід: '06.06.2026 20:10:07' або схоже -> вихід: '06.06.2026 20:10'
+  if(!raw) return '';
+  const s = String(raw).trim();
+  const m = s.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
+  if(m) return `${m[1]}.${m[2]}.${m[3]} ${m[4]}:${m[5]}`;
+  const m2 = s.match(/(\d{2})\.(\d{2})\.(\d{4})/);
+  if(m2) return `${m2[1]}.${m2[2]}.${m2[3]}`;
+  return s;
+}
+function hColor(h){return h>=24?'red':h>=8?'amber':'green';}
+function hLabel(h){const hh=Math.floor(h),mm=Math.round((h-hh)*60);return hh+'г '+mm+'хв';}
+
+function parseTicketsXls(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  let hr=-1;
+  for(let i=0;i<rows.length;i++){if(rows[i].map(c=>String(c)).some(c=>c.includes('п/п')||c.includes('Заяв'))){hr=i;break;}}
+  if(hr<0)return[];
+  const H=rows[hr].map(c=>String(c).replace(/\n/g,' ').trim());
+  const idx=(...n)=>{for(let x of n){const i=H.findIndex(h=>h.includes(x));if(i>=0)return i;}return-1;};
+  const iN=idx('п/п'),iP=idx('Пріори'),iZ=idx('Заяв'),iD=idx('Дата створення');
+  const iC=idx('Контакти'),iPr=idx('Заявлена проблема'),iR=idx('Відповідальний');
+  const iH=idx('Час у служб'),iS=idx('Сервіс інтернет'),iCm=idx('Коментарі сервису'),iA=idx('Адреса обладнання');
+  const iAcc=idx('Особ. рахунок','Особ.рахунок','Планова дата');
+  const t=[];
+  for(let i=hr+1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r[iN]||String(r[iN]).trim()==='')continue;
+    const h=parseFloat(r[iH])||0,comm=String(r[iCm]||'').trim(),ct=String(r[iC]||'');
+    const accPlan = parseAccountPlan(r[iAcc]);
+    const allPhones = parsePhones(ct);
+    t.push({id:String(r[iZ]).trim(),num:String(r[iN]).trim(),prio:parseInt(r[iP])||4,
+      zayav:String(r[iZ]).trim(),date:formatDateTime(r[iD]),
+      name:parseName(ct),phone:allPhones[0]||'',phones:allPhones.join(','),addr:parseAddr(ct),addrRaw:String(r[iA]),
+      problem:parseProblem(r[iPr]),resp:parseResp(r[iR]),hours:h,
+      service:String(r[iS]||'').split(';').pop().trim(),
+      account:accPlan.account, plannedDate:accPlan.plannedDate,
+      comment:comm,isFreenet:comm.toUpperCase().includes('FREENET')});
+  }
+  return t;
+}
+
+// ---------- Load data ----------
+async function loadAll(){
+  document.getElementById('table-body').innerHTML = '<tr><td colspan="7" id="loading-row">Завантаження...</td></tr>';
+  try{
+    const [tData, uData] = await Promise.all([
+      apiGet('getTickets', {}),  // admin - без login = всі заявки (без фільтру виконавця)
+      apiGet('getUsers')
+    ]);
+    if(tData.ok) tickets = tData.tickets.map(t=>({...t, hours: parseFloat(t.hours)||0, prio: parseInt(t.prio)||4}));
+    if(uData.ok) users = uData.users.filter(u=>u.role==='executor');
+    renderStats();
+    renderTable();
+  } catch(e){
+    document.getElementById('table-body').innerHTML = '<tr><td colspan="7" id="loading-row">⚠️ Немає з\'єднання з сервером</td></tr>';
+  }
+}
+
+function getFiltered(){
+  let t = [...tickets];
+  if(filterKey==='freenet') t = t.filter(x=>x.isFreenet);
+  if(showUnassignedOnly) t = t.filter(x=>!x.assigned_to);
+  if(searchTerm){
+    const s = searchTerm.toLowerCase();
+    t = t.filter(x => String(x.addr||'').toLowerCase().includes(s) || String(x.zayav||'').toLowerCase().includes(s) || String(x.addrRaw||'').toLowerCase().includes(s));
+  }
+  t.sort((a,b)=>{
+    const aEmpty = !a.assigned_to, bEmpty = !b.assigned_to;
+    if(aEmpty && !bEmpty) return -1;
+    if(!aEmpty && bEmpty) return 1;
+    if(a.assigned_to !== b.assigned_to) return String(a.assigned_to).localeCompare(String(b.assigned_to));
+    return b.hours - a.hours;
+  });
+  return t;
+}
+
+function renderStats(){
+  const t = filterKey==='all' ? tickets : tickets.filter(x=>filterKey==='freenet'?x.isFreenet:true);
+  const total = t.length;
+  const unassigned = t.filter(x=>!x.assigned_to).length;
+  const crit = t.filter(x=>x.hours>=24).length;
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="label">Всього заявок</div></div>
+    <div class="stat-card"><div class="num" style="color:#A32D2D">${crit}</div><div class="label">Критичних (24г+)</div></div>
+    <div class="stat-card"><div class="num" style="color:#854F0B">${unassigned}</div><div class="label">Не призначено</div></div>
+  `;
+}
+
+function renderTable(){
+  const tv = getFiltered();
+  const tbody = document.getElementById('table-body');
+  if(!tv.length){
+    tbody.innerHTML = `<tr><td colspan="7"><div id="empty-state"><span class="icon">📭</span><p>Заявок не знайдено</p></div></td></tr>`;
+    return;
+  }
+  let html = '';
+  let lastGroup = null;
+  tv.forEach(t=>{
+    const group = t.assigned_to || '';
+    if(group !== lastGroup){
+      lastGroup = group;
+      const label = group ? (users.find(u=>u.login===group)||{}).display_name || group : '— Не призначено —';
+      const color = group ? '#185FA5' : '#A32D2D';
+      const count = tv.filter(x=>(x.assigned_to||'')===group).length;
+      html += `<tr><td colspan="7" style="background:#F2F2F7;padding:8px 12px;font-size:12px;font-weight:700;color:${color};border-bottom:1px solid #E0E0E0">${label} <span style="font-weight:400;color:#8E8E93">(${count})</span></td></tr>`;
+    }
+    const cl = hColor(t.hours);
+    const addr = t.addr || cleanAddr(String(t.addrRaw||'').split(';')[0].trim());
+    const userOptions = users.map(u=>`<option value="${u.login}" ${t.assigned_to===u.login?'selected':''}>${u.display_name}</option>`).join('');
+    const execComment = t.comment_from_executor ? String(t.comment_from_executor).replace(/\n/g,'<br>') : '';
+    html += `<tr>
+      <td><span class="cell-hours ${cl}">${hLabel(t.hours)}</span></td>
+      <td><span class="cell-zayav">${t.zayav}</span>${t.isFreenet?'<span class="freenet-badge">FREENET</span>':''}</td>
+      <td class="cell-addr">${addr||'—'}</td>
+      <td class="cell-prob">${t.problem||''}</td>
+      <td>Піор. ${t.prio}</td>
+      <td>
+        <select class="assign-select ${t.assigned_to?'assigned':''}" data-id="${t.id}" onchange="assignTicket(this)">
+          <option value="">— Не призначено —</option>
+          ${userOptions}
+        </select>
+      </td>
+      <td class="cell-exec-comment">${execComment||'—'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+async function assignTicket(selectEl){
+  const ticketId = selectEl.dataset.id;
+  const assignTo = selectEl.value;
+  selectEl.disabled = true;
+  try{
+    const data = await apiGet('assignTicket', { ticketId, assignTo });
+    if(data.ok){
+      const t = tickets.find(x=>String(x.id)===String(ticketId));
+      if(t) t.assigned_to = assignTo;
+      showToast(assignTo ? 'Призначено: ' + (users.find(u=>u.login===assignTo)||{}).display_name : 'Призначення знято');
+      renderStats();
+      renderTable();
+    } else {
+      showToast('Помилка: ' + (data.error||''));
+      selectEl.disabled = false;
+    }
+  } catch(e){
+    showToast('Немає з\'єднання');
+    selectEl.disabled = false;
+  }
+}
+
+// ---------- Import xls ----------
+document.getElementById('file-input').onchange = async function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  showToast('Читання файлу...');
+  const reader = new FileReader();
+  reader.onload = async function(ev){
+    try{
+      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellText:true, cellDates:false});
+      const parsed = parseTicketsXls(wb);
+      showToast(`Знайдено ${parsed.length} заявок. Завантаження на сервер...`);
+      const data = await apiPost('importTickets', { login: currentUser.login }, { tickets: parsed });
+      if(data.ok){
+        showToast(`✓ Імпортовано ${data.count} заявок`);
+        await loadAll();
+      } else {
+        showToast('Помилка імпорту: ' + (data.error||''));
+      }
+    } catch(err){
+      showToast('Помилка читання файлу: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  this.value = '';
+};
+
+// ---------- Events ----------
+document.getElementById('login-btn').onclick = doLogin;
+document.getElementById('password-input').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('logout-btn').onclick = doLogout;
+document.getElementById('refresh-btn').onclick = loadAll;
+document.getElementById('search-input').addEventListener('input', e=>{ searchTerm = e.target.value; renderTable(); });
+document.getElementById('unassigned-check').addEventListener('change', e=>{ showUnassignedOnly = e.target.checked; renderStats(); renderTable(); });
+document.querySelectorAll('.filter-chip').forEach(btn=>{
+  btn.onclick = function(){
+    document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    filterKey = this.dataset.filter;
+    renderStats(); renderTable();
+  };
+});
+
+// ---------- Init ----------
+(function init(){
+  const saved = loadSession();
+  if(saved && saved.role==='admin'){ currentUser = saved; showMain(); }
+})();
+</script>
+</body>
+</html>
