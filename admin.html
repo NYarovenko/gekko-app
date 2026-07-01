@@ -378,7 +378,14 @@ function renderTable(){
     const cl = hColor(t.hours);
     const addr = t.addr || cleanAddr(String(t.addrRaw||'').split(';')[0].trim());
     const userOptions = users.map(u=>`<option value="${u.login}" ${t.assigned_to===u.login?'selected':''}>${u.display_name}</option>`).join('');
-    const execComment = t.comment_from_executor ? String(t.comment_from_executor).replace(/\n/g,'<br>') : '';
+    const execComment = t.comment_from_executor ? String(t.comment_from_executor)
+      .split('\n\n').filter(Boolean)
+      .map(entry=>{
+        const lines = entry.split('\n');
+        const date = lines[0]||'';
+        const text = lines.slice(1).join('\n');
+        return `<span style="color:#8E8E93;font-size:11px">${date}</span><br>${text}`;
+      }).join('<hr style="border:none;border-top:0.5px solid #E0E0E0;margin:4px 0">') : '';
     html += `<tr>
       <td><span class="cell-hours ${cl}">${hLabel(t.hours)}</span></td>
       <td><span class="cell-zayav">${t.zayav}</span>${t.isFreenet?'<span class="freenet-badge">FREENET</span>':''}</td>
