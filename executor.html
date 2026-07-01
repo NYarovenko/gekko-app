@@ -504,7 +504,7 @@ async function submitComment(){
   btn.disabled = true; btn.textContent = 'Додавання...';
   errEl.textContent = '';
   try{
-    const data = await apiPost('addComment', {}, { ticketId: activeCommentTicketId, login: currentUser.login, comment: text });
+    const data = await apiGet('addComment', { ticketId: activeCommentTicketId, login: currentUser.login, comment: text });
     if(data.ok){
       // Оновлюємо локальний коментар заявки, щоб одразу побачити в деталях
       const t = getTicketById(activeCommentTicketId);
